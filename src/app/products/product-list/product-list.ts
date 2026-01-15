@@ -18,15 +18,29 @@ export class ProductList {
   private productService = inject(ProductService);
 
   products$: Observable<Product[]>;
+  productsNumber$: Observable<number>;
+  mostExpensiveProduct$: Observable<Product>;
 
   constructor() {
     this.products$ = this.productService.products$;
+    this.mostExpensiveProduct$ = this.productService.mostExpensiveProduct$;
+
+    this.productsNumber$ = this
+                              .products$
+                              .pipe(
+                                map(products => products.length),
+                                startWith(0)
+                              )
   }
 
   private pageSize = 5;
   protected start = 0;
   protected end = this.pageSize;
   protected pageNumber = 1;
+
+  loadMore() {
+    this.productService.initProducts();
+  }
 
   protected changePage(increment: number) {
     this.pageNumber = this.pageNumber + increment;

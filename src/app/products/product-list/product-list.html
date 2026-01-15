@@ -1,4 +1,5 @@
 <div class="right">
+    {{ productsNumber$ | async }} products /
 
     {favourites, plural,
     =0 {no favourite}
@@ -26,6 +27,13 @@
 }
 
 <div class="right">
+    @if(mostExpensiveProduct$ | async; as mostExpensiveProduct) {
+        <span>
+        Most expensive:
+        {{ mostExpensiveProduct?.name }}
+        {{ mostExpensiveProduct?.price | currency }}
+        </span>
+    }
 
     <button (click)="reload()">Reload List</button>&nbsp;
     <a routerLink="create">Create new product...</a>
@@ -37,7 +45,12 @@
         Previous Page
     </button>
     Page {{ pageNumber }}
-    <button (click)="changePage(1)">
+    <button (click)="changePage(1)" [disabled]="(productsNumber$ | async) <= end">
         Next Page
     </button>
+    @if ((productsNumber$ | async) <= end) {
+        <button (click)="loadMore()">
+            Load more...
+        </button>
+    }
 </div>

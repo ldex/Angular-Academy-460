@@ -25,26 +25,58 @@ export class ProductService {
   private apiService = inject(ApiService);
   private router = inject(Router);
 
-  products$: Observable<Product[]>;
+  private productSubject = new BehaviorSubject<Product[]>([])
+  products$: Observable<Product[]> = this.productSubject.asObservable()
+
+  mostExpensiveProduct$: Observable<Product>;
+
   private loading = signal(false);
   readonly isLoading = this.loading.asReadonly();
   error = signal<string>(undefined);
 
   private favourites: Set<Product> = new Set();
 
+  productsToLoad = 10;
+  pageToLoad = 1;
+
   constructor() {
     this.initProducts();
+    this.initMostExpensiveProduct();
+  }
+
+  private initMostExpensiveProduct() {
+    this.mostExpensiveProduct$ =
+      this
+      .products$
+      .pipe(
+        map(products => [...products].sort((p1, p2) => p1.price > p2.price ? -1 : 1)),
+        // [{p1}, {p2}, {p3}]
+        mergeAll(),
+        // {p1}, {p2}, {p3}
+        first()
+      )
   }
 
   initProducts() {
     const params = {
-      sortBy: 'modifiedDate',
-      order: 'desc',
-    };
+        page: this.pageToLoad++,
+        limit: this.productsToLoad,
+        sortBy: 'modifiedDate',
+        order: 'desc'
+    }
 
-    this.products$ = this
-                      .apiService
-                      .getProducts(params);
+    this
+      .apiService
+      .getProducts(params)
+      .pipe(
+        shareReplay()
+      )
+      .subscribe(
+        newProducts => {
+          let currentProducts = this.productSubject.value;
+          this.productSubject.next(currentProducts.concat(newProducts))
+        }
+      );
   }
 
   resetList() {
